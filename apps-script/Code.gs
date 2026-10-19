@@ -13,15 +13,26 @@
  *
  * UPDATING an existing deployment (keeps the same URL):
  *   Deploy > Manage deployments > pencil icon > Version: New version > Deploy.
+ *
+ * Version 2 (2026-10-19): fixed operator names, "Handed Over To" column, and every
+ * entry saved as plain text. Run "setup" once after pasting to add the new column.
  */
 
 const TZ = 'Asia/Manila';
 const REPORTS = 'Daily Reports';
 const INCIDENTS = 'Incidents';
+// The four CCTV operators. Keep these in step with OPS in the HTML page.
+const ROLES = {
+  head: { name: 'James Adrian M. Elona', position: 'ICTU Head' },
+  co: { name: 'Argie R. Lopez', position: 'Computer Operator II' },
+  gs: { name: 'Erwin C. Balindo', position: 'General Service Alternate' },
+  dm: { name: 'Angelo N. Gabrieles', position: 'Dormitory Manager' }
+};
 const R_HEADERS = ['Report ID', 'Date', 'Shift', 'Operator on Duty', 'Position',
   'IP Installed', 'IP Working', 'IP Not Working (ID / location)', 'NVR Recording', 'NVR Date/Time Correct', 'NVR Days Stored',
   'Analog Installed', 'Analog Working', 'Analog Not Working (ID / location)', 'DVR Recording', 'DVR Date/Time Correct', 'DVR Days Stored',
-  'Incident Status', 'No. of Incidents', 'Handover / Remarks', 'Noted By (DPO-Designate)', 'Saved At'];
+  'Incident Status', 'No. of Incidents', 'Handover / Remarks', 'Noted By (DPO-Designate)', 'Saved At',
+  'Handed Over To'];
 const I_HEADERS = ['Report ID', 'Date', 'Shift', 'Incident No.', 'Time', 'Camera / Location',
   'What Happened', 'Clip Preserved', 'Action Taken', 'Operator on Duty'];
 
@@ -29,6 +40,10 @@ function doPost(e) {
   try {
     const r = JSON.parse(e.postData.contents).report;
     if (!r || !r.date) return reply_({ ok: false, error: 'No report received.' });
+    const who = ROLES[r.role];
+    if (!who) return reply_({ ok: false, error: 'Unknown operator.' });
+    // The register takes the name and position from ROLES, not from what the page sent.
+    r.operator = who.name; r.position = who.position;
 
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);  // two people saving at once won't overwrite each other
@@ -45,10 +60,11 @@ function doPost(e) {
       const id = nextId_(rs, last, r.date);
       const ip = r.ip || {}, an = r.an || {}, incs = r.incidents || [];
       rs.getRange(last + 1, 1, 1, R_HEADERS.length).setValues([[
-        id, toDate_(r.date), r.shift || '', r.operator || '', r.position || '',
-        num_(ip.total), num_(ip.up), ip.down || '', ip.rec || '', ip.clock || '', num_(ip.days),
-        num_(an.total), num_(an.up), an.down || '', an.rec || '', an.clock || '', num_(an.days),
-        incs.length ? 'Incident observed' : 'No incident', incs.length, r.notes || '', r.notedBy || '', new Date()
+        id, toDate_(r.date), txt_(r.shift), r.operator, r.position,
+        num_(ip.total), num_(ip.up), txt_(ip.down), txt_(ip.rec), txt_(ip.clock), num_(ip.days),
+        num_(an.total), num_(an.up), txt_(an.down), txt_(an.rec), txt_(an.clock), num_(an.days),
+        incs.length ? 'Incident observed' : 'No incident', incs.length, txt_(r.notes), txt_(r.notedBy), new Date(),
+        txt_(r.handTo)
       ]]);
       rs.getRange(last + 1, 1).setNumberFormat('@');
       rs.getRange(last + 1, 2).setNumberFormat('mmm d, yyyy');
@@ -56,7 +72,7 @@ function doPost(e) {
       if (incs.length) {
         const start = lastRow_(is) + 1;
         is.getRange(start, 1, incs.length, I_HEADERS.length).setValues(incs.map((x, i) => [
-          id, toDate_(r.date), r.shift || '', i + 1, x.time || '', x.cam || '', x.what || '', x.kept || '', x.action || '', r.operator || ''
+          id, toDate_(r.date), txt_(r.shift), i + 1, txt_(x.time), txt_(x.cam), txt_(x.what), txt_(x.kept), txt_(x.action), r.operator
         ]));
         is.getRange(start, 1, incs.length, 1).setNumberFormat('@');
         is.getRange(start, 2, incs.length, 1).setNumberFormat('mmm d, yyyy');
@@ -77,12 +93,13 @@ function doGet() {
   return reply_({ ok: true, message: 'CCTV Daily Report Register script is running.' });
 }
 
-// Run once from the editor. Makes sure both tabs and header rows exist.
+// Run once from the editor (and again after an update). Makes sure both tabs and
+// header rows exist; new columns are added at the right, so old rows stay in place.
 function setup() {
   [[REPORTS, R_HEADERS], [INCIDENTS, I_HEADERS]].forEach(([name, h]) => {
     const ss = SpreadsheetApp.getActive();
     const sh = ss.getSheetByName(name) || ss.insertSheet(name);
-    if (sh.getRange(1, 1).getValue() !== h[0]) sh.getRange(1, 1, 1, h.length).setValues([h]);
+    sh.getRange(1, 1, 1, h.length).setValues([h]);
     sh.setFrozenRows(1);
   });
   SpreadsheetApp.getActive().setSpreadsheetTimeZone(TZ);
@@ -112,7 +129,13 @@ function nextId_(sh, last, iso) {
   return base + String(n + 1).padStart(2, '0');
 }
 
-function num_(v) { return v === '' || v == null || isNaN(+v) ? (v || '') : +v; }
+// Saves text as plain text, so an entry that starts with = + - or @ never runs as a formula.
+function txt_(v) {
+  const s = v == null ? '' : String(v);
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+function num_(v) { return v === '' || v == null ? '' : isNaN(+v) ? txt_(v) : +v; }
 
 function toDate_(s) {
   const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
