@@ -6,83 +6,222 @@
 <title>CCTV Daily Report</title>
 <style>
   :root {
-    --bg: #f4f6f8; --panel: #ffffff; --ink: #1d2733; --muted: #5d6b7a; --line: #d5dce3;
-    --accent: #1f4e78; --accent-ink: #ffffff; --danger: #b42318; --field: #ffffff;
+    --ground: #eef2ef; --panel: #ffffff; --ink: #17231c; --muted: #55655b; --line: #d3ddd6; --field: #ffffff;
+    --brand: #0d5c3a; --brand-ink: #ffffff; --brand-soft: #e3f0e8; --brand-line: #9cc5ad;
+    --ok: #16794a; --warn: #9a5800; --bad: #b42318; --warn-soft: #fbf0dc; --bad-soft: #fbe5e2;
+    --shadow: 0 1px 2px rgba(18, 38, 26, .06), 0 2px 8px rgba(18, 38, 26, .05);
+    --r: 10px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #12171d; --panel: #1b222b; --ink: #e6ebf0; --muted: #9aa8b6; --line: #2e3945;
-      --accent: #5b9bd5; --accent-ink: #0d1218; --danger: #f97066; --field: #11161c;
+      --ground: #0f1512; --panel: #17201b; --ink: #e5ece7; --muted: #9db0a3; --line: #2b3a31; --field: #101813;
+      --brand: #4fb37e; --brand-ink: #07140d; --brand-soft: #1c3227; --brand-line: #2f6047;
+      --ok: #5fd39a; --warn: #f0b04a; --bad: #ff8a7a; --warn-soft: #33281a; --bad-soft: #3a1f1c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #12171d; --panel: #1b222b; --ink: #e6ebf0; --muted: #9aa8b6; --line: #2e3945;
-    --accent: #5b9bd5; --accent-ink: #0d1218; --danger: #f97066; --field: #11161c;
+    --ground: #0f1512; --panel: #17201b; --ink: #e5ece7; --muted: #9db0a3; --line: #2b3a31; --field: #101813;
+    --brand: #4fb37e; --brand-ink: #07140d; --brand-soft: #1c3227; --brand-line: #2f6047;
+    --ok: #5fd39a; --warn: #f0b04a; --bad: #ff8a7a; --warn-soft: #33281a; --bad-soft: #3a1f1c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
   }
   * { box-sizing: border-box; }
-  html { accent-color: var(--accent); }
-  ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
-  input, textarea { caret-color: var(--accent); }
-  input[type="number"], input[type="date"], input[type="time"] { font-variant-numeric: tabular-nums; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; border-color: var(--accent); }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 Arial, Helvetica, sans-serif; }
-  header.app { background: var(--accent); color: var(--accent-ink); padding: 14px 16px; }
-  header.app h1 { margin: 0; font-size: 18px; }
-  header.app p { margin: 2px 0 0; font-size: 12px; opacity: .85; }
-  main { display: grid; grid-template-columns: minmax(320px, 520px) 1fr; gap: 16px; padding: 16px; align-items: start; }
+  html { accent-color: var(--brand); -webkit-text-size-adjust: 100%; scroll-padding-top: 12px; }
+  ::selection { background: color-mix(in srgb, var(--brand) 26%, transparent); }
+  input, textarea { caret-color: var(--brand); }
+  input[type="number"], input[type="date"], input[type="time"], .num-val { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid color-mix(in srgb, var(--brand) 35%, transparent); outline-offset: 0; border-color: var(--brand); }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 "Segoe UI", Roboto, -apple-system, system-ui, Arial, sans-serif; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 10px; border: 2px solid var(--ground); }
+
+  /* ---------- app shell ---------- */
+  header.app { background: var(--brand); color: var(--brand-ink); padding: 14px 20px; padding-top: max(14px, env(safe-area-inset-top)); }
+  header.app .in { max-width: 1400px; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 4px 16px; flex-wrap: wrap; }
+  header.app h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+  header.app p { margin: 0; font-size: 13px; opacity: .88; }
+  main { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: minmax(360px, 560px) minmax(0, 1fr); gap: 20px; padding: 20px; align-items: start; }
   main > * { min-width: 0; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 10px; gap: 10px; } }
+
+  /* summary strip */
+  .board { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .tile { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 11px 14px 12px; box-shadow: var(--shadow); transition: border-color .15s ease-out, background-color .15s ease-out; }
+  .tile:hover { border-color: var(--brand-line); }
+  .tile .lb { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .tile .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); flex: none; }
+  .tile .val { display: block; font-size: 17px; font-weight: 700; margin-top: 3px; line-height: 1.25; }
+  .tile .sm { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile[data-state="ok"] .dot { background: var(--ok); }
+  .tile[data-state="warn"] { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+  .tile[data-state="warn"] .dot { background: var(--warn); }
+  .tile[data-state="warn"] .val { color: var(--warn); }
+  .tile[data-state="bad"] { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+  .tile[data-state="bad"] .dot { background: var(--bad); }
+  .tile[data-state="bad"] .val { color: var(--bad); }
+
+  /* form sections */
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .panel h2 { font-size: 17px; font-weight: 700; margin: 0 0 4px; letter-spacing: -.005em; }
+  .panel .lead { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .panel h3 { font-size: 14px; font-weight: 700; margin: 0; }
+  label, .flabel { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 5px; }
+  input, textarea, select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font: inherit; transition: border-color .15s ease-out; }
+  input:hover, textarea:hover, select:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--line)); }
+  input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--muted) 88%, transparent); }
+  textarea { min-height: 84px; resize: vertical; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .hidden { display: none !important; }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 1px solid var(--brand); background: var(--brand); color: var(--brand-ink); padding: 10px 16px; border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out; }
+  .btn:hover:not(:disabled) { background: color-mix(in srgb, var(--brand) 86%, var(--ink)); border-color: color-mix(in srgb, var(--brand) 86%, var(--ink)); }
+  .btn.ghost { background: transparent; color: var(--brand); border-color: var(--brand-line); }
+  .btn.ghost:hover:not(:disabled) { background: var(--brand-soft); border-color: var(--brand); }
+  .btn.danger { background: transparent; color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }
+  .btn.danger:hover:not(:disabled) { background: var(--bad-soft); border-color: var(--bad); }
+  .btn.small { min-height: 38px; padding: 7px 12px; font-size: 14px; }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+
+  /* shift picks */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip { min-height: 38px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out; }
+  .chip:hover { border-color: var(--brand-line); background: var(--brand-soft); }
+  .chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .chip .tag { font-size: 11.5px; font-weight: 700; margin-left: 4px; opacity: .8; }
+
+  /* duty board: one plate per role, the "on duty" tab slides to the plate that has the shift */
+  .plates { display: grid; gap: 8px; margin-top: 2px; }
+  .plate { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); align-items: stretch; border: 1px solid var(--line); border-radius: 9px; background: var(--field); overflow: hidden; transition: border-color .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out; }
+  .plate:has(.on) { border-color: var(--brand); background: var(--brand-soft); box-shadow: 0 0 0 1px var(--brand) inset; }
+  .plate .role { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px; text-align: left; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-weight: 700; font-size: 14.5px; padding: 9px 12px; cursor: pointer; min-height: 58px; transition: background-color .15s ease-out; }
+  .plate .role:hover { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+  .plate .role .duty { font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 1px 0; letter-spacing: .02em; }
+  .plate .role.on { border-right-color: var(--brand-line); }
+  .plate .role.on .duty { color: var(--brand-ink); background: var(--brand); padding: 1px 8px; border-radius: 999px; }
+  .plate .role:focus-visible { outline-offset: -3px; }
+  .plate input { border: 0; border-radius: 0; background: transparent; min-height: 58px; padding: 10px 12px; }
+  .plate input:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+  /* camera checklist */
+  .rec { border: 1px solid var(--line); border-radius: 9px; padding: 14px 14px 6px; margin-top: 12px; }
+  .rec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .rec-head .st { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .rec-head .st[data-state="ok"] { color: var(--ok); }
+  .rec-head .st[data-state="warn"] { color: var(--warn); }
+  .rec-head .st[data-state="bad"] { color: var(--bad); }
+  .step { display: grid; grid-template-columns: 46px minmax(0, 1fr) 46px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); overflow: hidden; transition: border-color .15s ease-out; }
+  .step:focus-within { border-color: var(--brand); }
+  .step input { border: 0; border-radius: 0; text-align: center; font-weight: 700; font-size: 17px; padding: 8px 4px; -moz-appearance: textfield; background: transparent; }
+  .step input::-webkit-outer-spin-button, .step input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .step input:focus-visible { outline: 0; }
+  .step button { border: 0; background: transparent; color: var(--brand); cursor: pointer; display: grid; place-items: center; transition: background-color .15s ease-out; touch-action: manipulation; }
+  .step button:hover { background: var(--brand-soft); }
+  .step button:active { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+  .step button svg { width: 18px; height: 18px; }
+  .checks { margin-top: 12px; border-top: 1px solid var(--line); }
+  .check { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .check:last-child { border-bottom: 0; }
+  .check .q { font-weight: 600; font-size: 14.5px; }
+  .check .step { width: 156px; flex: none; }
+  .check .step input { min-height: 40px; }
+
+  /* yes / no toggle (radio group) */
+  .yn { display: inline-grid; grid-template-columns: 1fr 1fr; flex: none; width: 156px; border: 1px solid var(--line); border-radius: 8px; background: var(--ground); padding: 3px; gap: 3px; }
+  .yn button { min-height: 38px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; transition: background-color .15s ease-out, color .15s ease-out; touch-action: manipulation; }
+  .yn button:hover { color: var(--ink); }
+  .yn button[aria-checked="true"][data-v="Yes"] { background: var(--ok); color: #fff; }
+  .yn button[aria-checked="true"][data-v="No"] { background: var(--bad); color: #fff; }
+  :root[data-theme="dark"] .yn button[aria-checked="true"] { color: #07140d; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .yn button[aria-checked="true"] { color: #07140d; } }
+  .yn button:focus-visible { outline-offset: -2px; }
+
+  /* incidents */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { min-height: 52px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--field); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out; }
+  .seg button:hover { border-color: var(--brand-line); }
+  .seg button.on { background: var(--brand-soft); border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; color: var(--brand); }
+  #stInc.on { background: var(--warn-soft); border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn) inset; color: var(--warn); }
+  .inc { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px 14px; margin-top: 12px; background: var(--field); }
+  .inc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .inc .num { font-weight: 700; font-size: 14.5px; }
+  .inc .x { min-height: 36px; }
+  .inc .kept-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+  .inc .kept-row .flabel { margin: 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+  /* save bar */
+  .printbar { position: sticky; bottom: 0; z-index: 5; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); box-shadow: 0 -6px 18px rgba(18, 38, 26, .12); }
+  .printbar .actions { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .err { color: var(--bad); font-size: 13.5px; margin-top: 8px; white-space: pre-line; }
+  .err:empty { display: none; }
+  .msg { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  details summary { cursor: pointer; font-weight: 700; min-height: 32px; display: flex; align-items: center; }
+  .clear-row { display: flex; justify-content: flex-end; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+  /* preview */
+  .preview-panel { position: sticky; top: 16px; }
+  .preview-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .preview-head span { color: var(--muted); font-size: 13px; }
+  #preview { overflow: hidden; background: var(--ground); border-radius: 8px; padding: 14px; }
+  #preview .fit { transform-origin: top left; }
+
+  @media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+    .preview-panel { position: static; }
+  }
   @media (max-width: 600px) {
-    header.app { padding: 12px; padding-top: max(12px, env(safe-area-inset-top)); }
-    .panel { padding: 12px; margin-bottom: 10px; }
-    input, textarea, select { font-size: 16px; padding: 9px 10px; }
-    .seg { flex-wrap: wrap; }
-    .seg button { padding: 10px 6px; min-width: 50%; }
-    .btn { padding: 11px 14px; font-size: 15px; }
-    .printbar { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -4px 12px rgba(0,0,0,.15); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-    .printbar .btn { flex: 1 1 0; font-size: 14px; padding: 11px 8px; }
-    .chips .btn.small { padding: 8px 10px; font-size: 13px; }
+    header.app { padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); }
+    header.app h1 { font-size: 18px; }
+    header.app p { font-size: 12.5px; }
+    main { padding: 10px; gap: 10px; }
+    .board { gap: 8px; }
+    .tile { padding: 9px 11px 10px; }
+    .tile .val { font-size: 15.5px; }
+    .panel { padding: 14px 14px 16px; margin-bottom: 10px; }
+    input, textarea, select { font-size: 16px; }
+    .row2 { gap: 10px; }
+    .plate { grid-template-columns: minmax(0, 1fr); }
+    .plate .role { flex-direction: row; justify-content: space-between; align-items: center; min-height: 46px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .plate .role.on { border-bottom-color: var(--brand-line); }
+    .plate input { min-height: 48px; }
+    .rec { padding: 12px 12px 4px; }
+    .check { flex-wrap: wrap; }
+    .check .q { flex: 1 1 140px; }
+    .yn, .check .step { width: 148px; }
     #preview { padding: 8px; }
   }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 14px; }
-  .panel h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 3px; }
-  input, textarea, select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--field); color: var(--ink); font: inherit; }
-  textarea { min-height: 60px; resize: vertical; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  @media (max-width: 480px) { .row2, .row3 { grid-template-columns: 1fr; row-gap: 0; } }
-  .seg { display: flex; border: 1px solid var(--accent); border-radius: 6px; overflow: hidden; }
-  .seg button { flex: 1; border: 0; background: transparent; color: var(--accent); padding: 8px; font-weight: bold; cursor: pointer; font: inherit; font-weight: bold; }
-  .seg button.on { background: var(--accent); color: var(--accent-ink); }
-  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-  .btn.ghost { background: transparent; color: var(--accent); }
-  .btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
-  .btn.small { padding: 4px 8px; font-size: 12px; }
-  .btn, .seg button { transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out; }
-  .btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); border-color: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
-  .btn.ghost:hover:not(:disabled), .seg button:not(.on):hover { background: color-mix(in srgb, var(--accent) 10%, transparent); border-color: var(--accent); }
-  .btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: var(--danger); }
-  .btn:disabled { opacity: .55; cursor: progress; }
-  .seg button:focus-visible { outline-offset: -4px; outline-color: currentColor; }
-  .panel h3 { font-size: 13px; margin: 14px 0 0; }
-  .panel h2 + h3 { margin-top: 0; }
-  .clear-row { display: flex; justify-content: flex-end; margin-top: 12px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .seg button + button { border-left: 1px solid var(--accent); }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-  .err { color: var(--danger); font-size: 12px; margin-top: 8px; white-space: pre-line; }
-  .msg { color: var(--muted); font-size: 12px; margin-top: 8px; }
-  .hidden { display: none !important; }
-  .inc { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px 10px; margin-top: 10px; position: relative; }
-  .inc .x { position: absolute; top: 6px; right: 6px; }
-  .inc .num { font-weight: bold; font-size: 12px; color: var(--muted); }
-  .preview-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-  .preview-head span { color: var(--muted); font-size: 12px; }
-  #preview { overflow: hidden; background: var(--bg); border-radius: 6px; padding: 12px; }
-  #preview .fit { transform-origin: top left; }
+  @media (max-width: 600px) { .row2.stack { grid-template-columns: 1fr; gap: 0; } }
+  @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; gap: 0; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  .plate .pname { display: flex; align-items: center; min-height: 58px; padding: 10px 12px; font-weight: 600; font-size: 15.5px; }
+  .row2.down { grid-template-columns: minmax(0, 1fr) 150px; }
+  @media (max-width: 600px) {
+    .plate .pname { min-height: 46px; }
+    .row2.down { grid-template-columns: 1fr; gap: 0; }
+  }
+  /* camera picker */
+  .pickwrap { position: relative; }
+  .pickwrap input.pick { cursor: pointer; padding-right: 38px; text-overflow: ellipsis; }
+  .pickwrap svg { position: absolute; right: 12px; top: 50%; width: 18px; height: 18px; margin-top: -9px; color: var(--muted); pointer-events: none; }
+  dialog#camDlg { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); box-shadow: 0 12px 40px rgba(0, 0, 0, .25); }
+  dialog#camDlg::backdrop { background: rgba(10, 20, 14, .45); }
+  .dlg { padding: 16px 16px 0; }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .dlg-head h2 { margin: 0; font-size: 17px; }
+  .camgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; margin: 10px 0 4px; }
+  .camgrid button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out; touch-action: manipulation; }
+  .camgrid button:hover { border-color: var(--brand-line); }
+  .camgrid button[aria-pressed="true"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); box-shadow: 0 0 0 1px var(--bad) inset; }
+  .camrow { border: 1px solid var(--line); border-radius: 9px; padding: 4px 12px 12px; margin-top: 10px; }
+  .camrow h3 { margin: 8px 0 0; font-size: 14.5px; color: var(--bad); }
+  .camrow .row2 { grid-template-columns: minmax(0, 1fr) 140px; }
+  .dlg-foot { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 0 max(14px, env(safe-area-inset-bottom)); margin-top: 12px; background: var(--panel); border-top: 1px solid var(--line); }
+  @media (max-width: 600px) { .camgrid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); } .camrow .row2 { grid-template-columns: minmax(0, 1fr) 142px; gap: 8px; } }
 
   /* ---------- Report (A4 print layout) ---------- */
   .sheet { width: 210mm; min-height: 297mm; background: #fff; color: #000; margin: 0 auto; padding: 10mm 14mm 9mm;
@@ -107,6 +246,7 @@
   .sheet .box { display: inline-block; width: 3.6mm; height: 3.6mm; border: .75pt solid #000; vertical-align: -.6mm; margin-right: 1.5mm; text-align: center; font-size: 8.5pt; line-height: 3.4mm; font-weight: bold; }
   .sheet .status { display: flex; gap: 12mm; font-size: 10.5pt; margin: 1mm 0 0; }
   .sheet .notes { border: .75pt solid #000; min-height: 18mm; padding: 1.5mm 2mm; font-size: 10pt; white-space: pre-wrap; }
+  .sheet .ho { font-size: 10pt; margin-top: 1.5mm; }
   .sheet .signs { display: flex; justify-content: space-between; gap: 14mm; margin-top: 9mm; font-size: 10pt; break-inside: avoid; }
   .sheet .signs > div { flex: 1; }
   .sheet .signs .lbl { margin-bottom: 9mm; }
@@ -115,10 +255,11 @@
   @media print {
     @page { size: A4; margin: 0; }
     body { background: #fff; }
-    header.app, .editor, .preview-head { display: none !important; }
+    header.app, .board, .editor, .preview-head { display: none !important; }
     main { display: block; padding: 0; }
     .panel { border: 0; padding: 0; margin: 0; background: none; }
     .sheet { box-shadow: none; margin: 0; }
+    .preview-panel { position: static; box-shadow: none; }
     #preview { overflow: visible; height: auto !important; padding: 0; background: none; }
     #preview .fit { transform: none !important; }
   }
@@ -126,19 +267,30 @@
 </head>
 <body>
 <header class="app">
-  <h1>CCTV Daily Report</h1>
-  <p>DOH Treatment &amp; Rehabilitation Center, Dulag, Leyte · ICTU</p>
+  <div class="in">
+    <h1>CCTV Daily Report</h1>
+    <p>DOH Treatment &amp; Rehabilitation Center, Dulag, Leyte · ICTU</p>
+  </div>
 </header>
 <main>
+  <nav class="board" aria-label="Report at a glance">
+    <button class="tile" type="button" id="tShift" data-go="secDetails"><span class="lb"><span class="dot"></span>Shift</span><span class="val"></span><span class="sm"></span></button>
+    <button class="tile" type="button" id="tIp" data-go="secCheck"><span class="lb"><span class="dot"></span>IP cameras (NVR)</span><span class="val"></span><span class="sm"></span></button>
+    <button class="tile" type="button" id="tAn" data-go="secAnalog"><span class="lb"><span class="dot"></span>Analog cameras (DVR)</span><span class="val"></span><span class="sm"></span></button>
+    <button class="tile" type="button" id="tInc" data-go="secInc"><span class="lb"><span class="dot"></span>Incidents</span><span class="val"></span><span class="sm"></span></button>
+  </nav>
+
   <section class="editor">
-    <div class="panel">
+    <div class="panel" id="secDetails">
       <h2>Report details</h2>
-      <div class="row2">
+      <div class="row2 stack">
         <div><label for="date">Date</label><input type="date" id="date"></div>
         <div><label for="shift">Shift</label><input id="shift" list="shifts" placeholder="8:00 AM – 5:00 PM"></div>
       </div>
       <datalist id="shifts">
         <option value="8:00 AM – 5:00 PM">
+        <option value="8:00 AM – 12:00 NN">
+        <option value="1:00 PM – 5:00 PM">
         <option value="8:00 AM – 12:00 NN (WFH)">
         <option value="1:00 PM – 5:00 PM (WFH)">
         <option value="5:00 PM – 8:00 AM">
@@ -147,97 +299,113 @@
         <option value="24 hours">
       </datalist>
       <div class="chips" id="shiftChips">
-        <button class="btn small ghost" type="button" data-shift="8:00 AM – 5:00 PM">8:00 AM – 5:00 PM</button>
-        <button class="btn small ghost wfh" type="button" data-shift="8:00 AM – 12:00 NN (WFH)">Fri WFH 8:00 – 12:00 NN</button>
-        <button class="btn small ghost wfh" type="button" data-shift="1:00 PM – 5:00 PM (WFH)">Fri WFH 1:00 – 5:00 PM</button>
+        <button class="chip" type="button" data-shift="8:00 AM – 5:00 PM">8:00 AM – 5:00 PM</button>
+        <button class="chip wfh" type="button" data-shift="8:00 AM – 12:00 NN (WFH)">8:00 – 12:00 NN<span class="tag">WFH</span></button>
+        <button class="chip wfh" type="button" data-shift="1:00 PM – 5:00 PM (WFH)">1:00 – 5:00 PM<span class="tag">WFH</span></button>
       </div>
-      <p class="hint hidden" id="friHint">Friday: pick a 4-hour WFH shift for the WFH report.</p>
-      <label id="opLbl">Operator on duty</label>
-      <div class="seg" role="group" aria-labelledby="opLbl">
-        <button id="opHead" class="on" type="button">ICTU Head</button>
-        <button id="opCo" type="button">Computer Operator II</button>
-        <button id="opGs" type="button">General Service Alternate</button>
-        <button id="opDm" type="button">Dormitory Manager</button>
+      <p class="hint hidden" id="friHint">It's Friday. Pick a 4-hour WFH shift for the WFH report.</p>
+
+      <span class="flabel" id="opLbl">Operator on duty</span>
+      <div class="plates" role="radiogroup" aria-labelledby="opLbl">
+        <div class="plate"><button id="opHead" class="role on" type="button" role="radio">ICTU Head<span class="duty"></span></button><span class="pname">James Adrian M. Elona</span></div>
+        <div class="plate"><button id="opCo" class="role" type="button" role="radio">Computer Operator II<span class="duty"></span></button><span class="pname">Argie R. Lopez</span></div>
+        <div class="plate"><button id="opGs" class="role" type="button" role="radio">General Service Alternate<span class="duty"></span></button><span class="pname">Erwin C. Balindo</span></div>
+        <div class="plate"><button id="opDm" class="role" type="button" role="radio">Dormitory Manager<span class="duty"></span></button><span class="pname">Angelo N. Gabrieles</span></div>
       </div>
-      <div class="row2">
-        <div><label for="headName">ICTU Head (name)</label><input id="headName" placeholder="Juan A. Dela Cruz"></div>
-        <div><label for="coName">Computer Operator II (name)</label><input id="coName" placeholder="Maria B. Santos"></div>
-      </div>
-      <div class="row2">
-        <div><label for="gsName">General Service Alternate (name)</label><input id="gsName" placeholder="Pedro C. Reyes"></div>
-        <div><label for="dmName">Dormitory Manager (name)</label><input id="dmName" placeholder="Ana D. Lopez"></div>
-      </div>
-      <p class="hint">Names are remembered on this device.</p>
+      <p class="hint">Tap the person who has this shift.</p>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="secCheck">
       <h2>System check</h2>
-      <h3>IP cameras</h3>
-      <div class="row2">
-        <div><label for="ipTotal">Installed</label><input type="number" min="0" id="ipTotal"></div>
-        <div><label for="ipUp">Working</label><input type="number" min="0" id="ipUp"></div>
+      <p class="lead">Count the cameras on the monitor, then check each recorder.</p>
+      <div class="rec">
+        <div class="rec-head"><h3>IP cameras (NVR)</h3><span class="st" id="ipSt"></span></div>
+        <div class="row2">
+          <div><label for="ipTotal">Installed</label><div class="step"><button type="button" data-d="-1" aria-label="One less installed IP camera"></button><input type="number" min="0" inputmode="numeric" id="ipTotal"><button type="button" data-d="1" aria-label="One more installed IP camera"></button></div></div>
+          <div><label for="ipUp">Working</label><div class="step"><button type="button" data-d="-1" aria-label="One less working IP camera"></button><input type="number" min="0" inputmode="numeric" id="ipUp"><button type="button" data-d="1" aria-label="One more working IP camera"></button></div></div>
+        </div>
+        <label for="ipDown">Not working (ID / location)</label>
+        <div class="pickwrap"><input id="ipDown" class="pick" readonly data-k="ip" placeholder="None. Tap to pick a camera that is not working"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="checks">
+          <div class="check"><span class="q" id="ipRecL">NVR recording</span><div class="yn" role="radiogroup" aria-labelledby="ipRecL"><select id="ipRec" hidden><option>Yes</option><option>No</option></select></div></div>
+          <div class="check"><span class="q" id="ipClockL">Date and time correct</span><div class="yn" role="radiogroup" aria-labelledby="ipClockL"><select id="ipClock" hidden><option>Yes</option><option>No</option></select></div></div>
+          <div class="check"><label class="q" for="ipDays" style="margin:0;color:inherit">Days of footage stored</label><div class="step"><button type="button" data-d="-1" aria-label="One day less"></button><input type="number" min="0" inputmode="numeric" id="ipDays" placeholder="30"><button type="button" data-d="1" aria-label="One day more"></button></div></div>
+        </div>
       </div>
-      <label for="ipDown">Not working (ID / location)</label><input id="ipDown" placeholder="Leave blank if all are working">
-      <div class="row3">
-        <div><label for="ipRec">NVR recording</label><select id="ipRec"><option>Yes</option><option>No</option></select></div>
-        <div><label for="ipClock">Date / time correct</label><select id="ipClock"><option>Yes</option><option>No</option></select></div>
-        <div><label for="ipDays">Days stored</label><input type="number" min="0" id="ipDays" placeholder="30"></div>
-      </div>
-      <h3>Analog cameras</h3>
-      <div class="row2">
-        <div><label for="anTotal">Installed</label><input type="number" min="0" id="anTotal"></div>
-        <div><label for="anUp">Working</label><input type="number" min="0" id="anUp"></div>
-      </div>
-      <label for="anDown">Not working (ID / location)</label><input id="anDown" placeholder="Leave blank if all are working">
-      <div class="row3">
-        <div><label for="anRec">DVR recording</label><select id="anRec"><option>Yes</option><option>No</option></select></div>
-        <div><label for="anClock">Date / time correct</label><select id="anClock"><option>Yes</option><option>No</option></select></div>
-        <div><label for="anDays">Days stored</label><input type="number" min="0" id="anDays" placeholder="30"></div>
+      <div class="rec" id="secAnalog">
+        <div class="rec-head"><h3>Analog cameras (DVR)</h3><span class="st" id="anSt"></span></div>
+        <div class="row2">
+          <div><label for="anTotal">Installed</label><div class="step"><button type="button" data-d="-1" aria-label="One less installed analog camera"></button><input type="number" min="0" inputmode="numeric" id="anTotal"><button type="button" data-d="1" aria-label="One more installed analog camera"></button></div></div>
+          <div><label for="anUp">Working</label><div class="step"><button type="button" data-d="-1" aria-label="One less working analog camera"></button><input type="number" min="0" inputmode="numeric" id="anUp"><button type="button" data-d="1" aria-label="One more working analog camera"></button></div></div>
+        </div>
+        <label for="anDown">Not working (ID / location)</label>
+        <div class="pickwrap"><input id="anDown" class="pick" readonly data-k="an" placeholder="None. Tap to pick a camera that is not working"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div>
+        <div class="checks">
+          <div class="check"><span class="q" id="anRecL">DVR recording</span><div class="yn" role="radiogroup" aria-labelledby="anRecL"><select id="anRec" hidden><option>Yes</option><option>No</option></select></div></div>
+          <div class="check"><span class="q" id="anClockL">Date and time correct</span><div class="yn" role="radiogroup" aria-labelledby="anClockL"><select id="anClock" hidden><option>Yes</option><option>No</option></select></div></div>
+          <div class="check"><label class="q" for="anDays" style="margin:0;color:inherit">Days of footage stored</label><div class="step"><button type="button" data-d="-1" aria-label="One day less"></button><input type="number" min="0" inputmode="numeric" id="anDays" placeholder="30"><button type="button" data-d="1" aria-label="One day more"></button></div></div>
+        </div>
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="secInc">
       <h2 id="incLbl">Incidents</h2>
+      <p class="lead">Anything unusual seen on the cameras during this shift.</p>
       <div class="seg" role="group" aria-labelledby="incLbl">
         <button id="stNone" class="on" type="button">No incident</button>
         <button id="stInc" type="button">Incident observed</button>
       </div>
       <div id="incPanel" class="hidden">
         <div id="incList"></div>
-        <div class="actions"><button class="btn small ghost" id="addInc" type="button">+ Add incident</button></div>
+        <div class="actions"><button class="btn small ghost" id="addInc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another incident</button></div>
         <p class="hint">File a CCTV Incident Report within 24 hours and mark each clip "Preserved" on the recorder.</p>
       </div>
     </div>
 
     <div class="panel">
       <h2>Handover and remarks</h2>
+      <label for="notes" style="margin-top:8px">Notes for the next operator</label>
       <textarea id="notes" placeholder="Anything the next operator needs to know"></textarea>
+      <p class="hint">Refer to residents by initials or case number only.</p>
+      <label for="handTo">Handed over to</label><input id="handTo" list="staff" placeholder="Next operator on duty">
+      <datalist id="staff"><option value="James Adrian M. Elona"><option value="Argie R. Lopez"><option value="Erwin C. Balindo"><option value="Angelo N. Gabrieles"></datalist>
       <label for="notedName">Noted by: DPO-Designate (name)</label><input id="notedName" placeholder="Name of the DPO-Designate">
     </div>
 
     <div class="panel printbar">
-      <div class="actions" style="margin-top:0">
-        <button class="btn" id="print" type="button">Save as PDF</button>
-        <button class="btn" id="saveSheet" type="button">Save to Google Sheet</button>
+      <div class="actions">
+        <button class="btn" id="print" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 12v6M9.5 15.5 12 18l2.5-2.5"/></svg>Save as PDF</button>
+        <button class="btn" id="saveSheet" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></svg>Save to Google Sheet</button>
       </div>
       <div class="err" id="err" role="status" aria-live="polite"></div>
       <div class="actions hidden" id="pdfReady"><button class="btn" id="pdfGet" type="button">Tap to save the PDF</button></div>
     </div>
     <div class="panel">
       <p class="hint" style="margin-top:0"><b>Save as PDF</b> puts a one-page A4 PDF (e.g. "Daily CCTV Report 2026-10-15.pdf") in your Downloads. <b>Save to Google Sheet</b> adds the report to the CCTV Daily Report Register (one row per report, plus one row per incident).</p>
+      <p class="hint">After saving, file the PDF in the official folder and delete it from your phone. Never send it through Messenger or Viber.</p>
       <details id="gsBox" style="margin-top:10px">
-        <summary style="cursor:pointer;font-weight:bold">Google Sheet connection</summary>
+        <summary>Google Sheet connection</summary>
         <label for="gsUrl">Web app URL (from the Apps Script deployment, ends in /exec)</label>
         <input id="gsUrl" placeholder="https://script.google.com/macros/s/.../exec">
         <div class="actions"><button class="btn small" id="gsSave" type="button">Save settings</button><button class="btn small ghost" id="gsTest" type="button">Test connection</button></div>
         <p class="hint" id="gsState"></p>
       </details>
-      <div class="clear-row"><button class="btn danger" id="reset" type="button">Clear all fields</button></div>
+      <div class="clear-row"><button class="btn danger small" id="reset" type="button">Clear all fields</button></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="preview-head"><strong>Preview</strong><span>A4 portrait</span></div>
+  <dialog id="camDlg" aria-labelledby="camTitle">
+    <form method="dialog" class="dlg" novalidate>
+      <div class="dlg-head"><h2 id="camTitle">Cameras not working</h2><button class="btn small ghost" type="button" id="camCancel">Cancel</button></div>
+      <p class="hint" id="camHint" style="margin-top:0"></p>
+      <div class="camgrid" id="camGrid" role="group" aria-labelledby="camTitle"></div>
+      <div id="camRows"></div>
+      <div class="dlg-foot"><button class="btn ghost" type="button" id="camNone">All working</button><button class="btn" type="button" id="camDone">Done</button></div>
+    </form>
+  </dialog>
+
+  <section class="panel preview-panel">
+    <div class="preview-head"><h2 style="margin:0">Preview</h2><span>A4 portrait, one page</span></div>
     <div id="preview"></div>
   </section>
 </main>
@@ -273,7 +441,7 @@ const store = {
 };
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-let operator = "head", status = "none";
+let operator = "head", status = "none", incSeq = 0;
 
 function todayISO() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
 function longDate(s) {
@@ -295,30 +463,32 @@ function incidents() {
 function addInc(r = {}) {
   const el = document.createElement("div");
   el.className = "inc";
-  el.innerHTML = `<span class="num"></span>
-    <button class="btn small ghost x" type="button" title="Remove">×</button>
-    <div class="row2">
-      <div><label>Time</label><input data-k="time" type="time" value="${esc(r.time)}"></div>
-      <div><label>Camera / location</label><input data-k="cam" value="${esc(r.cam)}" placeholder="CAM 03 · Main gate"></div>
+  const n = ++incSeq;
+  el.innerHTML = `<div class="inc-head"><span class="num"></span>
+    <button class="btn small ghost x" type="button">Remove</button></div>
+    <div class="row2 stack">
+      <div><label for="it${n}">Time</label><input id="it${n}" data-k="time" type="time" value="${esc(r.time)}"></div>
+      <div><label for="ic${n}">Camera / location</label><input id="ic${n}" data-k="cam" value="${esc(r.cam)}" placeholder="CAM 03 · Main gate"></div>
     </div>
-    <label>What happened</label><textarea data-k="what">${esc(r.what)}</textarea>
-    <div class="row2">
-      <div><label>Clip preserved</label><select data-k="kept"><option>Yes</option><option>No</option></select></div>
-      <div><label>Action taken</label><input data-k="action" value="${esc(r.action)}" placeholder="Reported to security / TRC Chief"></div>
-    </div>`;
+    <label for="iw${n}">What happened</label><textarea id="iw${n}" data-k="what">${esc(r.what)}</textarea>
+    <p class="hint">Refer to residents by initials or case number only.</p>
+    <label for="ia${n}">Action taken</label><input id="ia${n}" data-k="action" value="${esc(r.action)}" placeholder="Reported to security / TRC Chief">
+    <div class="kept-row"><span class="flabel" id="ik${n}">Clip preserved</span><div class="yn" role="radiogroup" aria-labelledby="ik${n}"><select data-k="kept" hidden><option>Yes</option><option>No</option></select></div></div>`;
+  wireYN(el);
   el.querySelector(".x").onclick = () => { el.remove(); renumber(); render(); };
   el.addEventListener("input", render);
   $("incList").appendChild(el);
   renumber();
 }
-function renumber() { [...$("incList").children].forEach((el, i) => el.querySelector(".num").textContent = "Incident " + (i + 1)); }
+function renumber() { [...$("incList").children].forEach((el, i) => { el.querySelector(".num").textContent = "Incident " + (i + 1); el.querySelector(".x").setAttribute("aria-label", "Remove incident " + (i + 1)); }); }
 
 function fmtTime(t) {
   const m = /^(\d{2}):(\d{2})/.exec(t || ""); if (!m) return t || "";
   const h = +m[1]; return ((h + 11) % 12 + 1) + ":" + m[2] + (h < 12 ? " AM" : " PM");
 }
-const OPS = { head: ["headName", "ICTU Head"], co: ["coName", "Computer Operator II"], gs: ["gsName", "General Service Alternate"], dm: ["dmName", "Dormitory Manager"] };
-function opName() { return v(OPS[operator][0]); }
+// The four CCTV operators. Keep these in step with ROLES in the Apps Script.
+const OPS = { head: ["James Adrian M. Elona", "ICTU Head"], co: ["Argie R. Lopez", "Computer Operator II"], gs: ["Erwin C. Balindo", "General Service Alternate"], dm: ["Angelo N. Gabrieles", "Dormitory Manager"] };
+function opName() { return OPS[operator][0]; }
 function opPos() { return OPS[operator][1]; }
 
 const cams = k => `<td>${esc(v(k + "Total")) || "____"} installed · ${esc(v(k + "Up")) || "____"} working</td>`;
@@ -359,6 +529,7 @@ function reportHTML() {
     </table>
     <h4>C. Handover and remarks</h4>
     <div class="notes">${esc(v("notes"))}</div>
+    <div class="ho">Handed over to: <b>${esc(v("handTo")) || blank}</b></div>
     <div class="signs">
       <div><div class="lbl">Prepared by:</div><div class="n">${esc(opName()) || "&nbsp;"}</div><div class="p">${opPos()}</div></div>
       <div><div class="lbl">Noted by:</div><div class="n">${esc(v("notedName")) || "&nbsp;"}</div><div class="p">DPO-Designate</div></div>
@@ -379,6 +550,7 @@ window.addEventListener("resize", fit);
 function render() {
   $("preview").innerHTML = '<div class="fit">' + reportHTML() + "</div>";
   fit();
+  ui();
   $("err").textContent = ""; $("err").style.color = "";
   if (window.pdfReadyEl) pdfReadyEl.classList.add("hidden");
 }
@@ -398,7 +570,7 @@ function setOperator(o) {
   $("opCo").classList.toggle("on", o === "co");
   $("opGs").classList.toggle("on", o === "gs");
   $("opDm").classList.toggle("on", o === "dm");
-  ["opHead", "opCo", "opGs", "opDm"].forEach(id => $(id).setAttribute("aria-pressed", $(id).classList.contains("on")));
+  ["opHead", "opCo", "opGs", "opDm"].forEach(id => { const on = $(id).classList.contains("on"); $(id).setAttribute("aria-checked", on); $(id).querySelector(".duty").textContent = on ? "ON DUTY" : "Tap to set on duty"; });
   store.set("operator", o);
   render();
 }
@@ -427,6 +599,130 @@ $("date").addEventListener("change", showFriday); $("date").addEventListener("in
 $("stNone").onclick = () => setStatus("none");
 $("stInc").onclick = () => setStatus("inc");
 $("addInc").onclick = () => { addInc(); render(); };
+// ---------- screen controls: Yes/No toggles, number steppers, summary tiles ----------
+// Each Yes/No toggle drives the hidden <select> beside it, so the report and the sheet read the same values as before.
+function wireYN(root) {
+  root.querySelectorAll(".yn").forEach(g => {
+    if (g.querySelector("button")) return;
+    const sel = g.querySelector("select");
+    ["Yes", "No"].forEach(val => {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "radio"); b.dataset.v = val; b.textContent = val;
+      b.onclick = () => { sel.value = val; sel.dispatchEvent(new Event("change", { bubbles: true })); };
+      b.onkeydown = e => {
+        if (!/^Arrow/.test(e.key)) return;
+        e.preventDefault(); const o = b.nextElementSibling || g.querySelector("button"); o.focus(); o.click();
+      };
+      g.appendChild(b);
+    });
+  });
+}
+const ICON = {
+  "-1": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+  "1": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
+};
+document.querySelectorAll(".step button").forEach(b => {
+  b.innerHTML = ICON[b.dataset.d];
+  b.onclick = () => {
+    const inp = b.parentElement.querySelector("input");
+    inp.value = Math.max(0, (parseInt(inp.value, 10) || (b.dataset.d > 0 && inp.placeholder ? +inp.placeholder - 1 : 0)) + +b.dataset.d);
+    inp.dispatchEvent(new Event("input", { bubbles: true })); inp.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+});
+document.querySelectorAll(".tile").forEach(t => t.onclick = () => $(t.dataset.go).scrollIntoView({ behavior: "smooth", block: "start" }));
+function camState(k) {
+  const tot = v(k + "Total"), up = v(k + "Up"), rec = v(k + "Rec") === "Yes", clock = v(k + "Clock") === "Yes", box = k === "ip" ? "NVR" : "DVR";
+  const r = { state: "", val: "Not counted yet", sm: "Enter installed and working" };
+  if (tot !== "" && up !== "") {
+    const down = Math.max(0, +tot - +up);
+    r.val = up + " of " + tot + " working";
+    r.state = down ? "warn" : "ok";
+    r.sm = down ? down + " not working" : "All cameras working";
+  }
+  if (!rec) { r.state = "bad"; r.sm = box + " not recording"; }
+  else if (!clock) { r.state = r.state === "bad" ? "bad" : "warn"; r.sm = box + " date and time wrong"; }
+  return r;
+}
+function tile(id, t) {
+  const el = $(id); el.dataset.state = t.state || "";
+  el.querySelector(".val").textContent = t.val; el.querySelector(".sm").textContent = t.sm;
+}
+function ui() {
+  document.querySelectorAll(".yn").forEach(g => { const s = g.querySelector("select").value; g.querySelectorAll("button").forEach(b => { const on = b.dataset.v === s; b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; }); });
+  document.querySelectorAll("#shiftChips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.shift === v("shift")));
+  const d = longDate(v("date"));
+  tile("tShift", { state: v("shift") && d ? "ok" : "", val: v("shift") || "Set the shift", sm: d || "Set the date" });
+  ["ip", "an"].forEach(k => { const t = camState(k); tile(k === "ip" ? "tIp" : "tAn", t); const st = $(k + "St"); st.dataset.state = t.state; st.textContent = t.state ? t.sm : ""; });
+  const n = status === "inc" ? Math.max(1, incidents().filter(r => r.time || r.cam || r.what || r.action).length) : 0;
+  tile("tInc", n ? { state: "warn", val: n + (n > 1 ? " incidents" : " incident"), sm: "File the Incident Report within 24 hours" } : { state: "ok", val: "No incident", sm: "Nothing unusual this shift" });
+}
+wireYN(document);
+
+// ---------- "Not working" camera picker ----------
+// Cameras are numbered 01 to the installed count. The location or code typed for a camera
+// is remembered on this device, so next time it fills in by itself.
+const CAM = { ip: "IPCam", an: "AnalogCam" }, down = { ip: {}, an: {} };
+let camK = null, camSnap = "";
+function camLocs() { try { return JSON.parse(store.get("camloc") || "{}"); } catch (e) { return {}; } }
+function camText(k) {
+  return Object.keys(down[k]).sort().map(c => { const d = down[k][c]; return c + (d.loc ? " · " + d.loc : ""); }).join("; ");
+}
+function camRows() {
+  const k = camK;
+  $("camRows").innerHTML = "";
+  Object.keys(down[k]).sort().forEach(c => {
+    const d = down[k][c], row = document.createElement("div");
+    row.className = "camrow"; row.dataset.c = c;
+    row.innerHTML = `<h3>${c}</h3>
+      <label for="cl-${c}">Location or code</label><input id="cl-${c}" data-f="loc" value="${esc(d.loc)}" placeholder="e.g. Main gate">`;
+    // A typed location is remembered right away, even if the picker is cancelled.
+    row.querySelectorAll("input").forEach(i => i.oninput = () => {
+      d[i.dataset.f] = i.value.trim();
+      const locs = camLocs(); if (d.loc) locs[c] = d.loc; else delete locs[c]; store.set("camloc", JSON.stringify(locs));
+    });
+    $("camRows").appendChild(row);
+  });
+}
+function openCams(k) {
+  const n = parseInt(v(k + "Total"), 10), name = k === "ip" ? "IP" : "analog";
+  if (!n) { say("Enter how many " + name + " cameras are installed first."); $(k + "Total").focus(); return; }
+  camK = k; camSnap = JSON.stringify(down[k]);
+  Object.keys(down[k]).forEach(c => { if (+c.slice(CAM[k].length) > n) delete down[k][c]; });
+  $("camTitle").textContent = (k === "ip" ? "IP" : "Analog") + " cameras not working";
+  $("camHint").textContent = "Tap each camera that is not working (" + n + " installed), then type its location or code as shown on the monitor.";
+  $("camGrid").innerHTML = "";
+  for (let i = 1; i <= n; i++) {
+    const c = CAM[k] + String(i).padStart(2, "0"), b = document.createElement("button");
+    b.type = "button"; b.textContent = c; b.setAttribute("aria-pressed", !!down[k][c]);
+    b.onclick = () => {
+      if (down[k][c]) delete down[k][c]; else down[k][c] = { loc: camLocs()[c] || "" };
+      b.setAttribute("aria-pressed", !!down[k][c]); camRows();
+      const inp = down[k][c] && $("cl-" + c); if (inp && !inp.value) inp.focus();
+    };
+    $("camGrid").appendChild(b);
+  }
+  camRows(); $("camDlg").dataset.ok = ""; $("camDlg").showModal();
+}
+function closeCams(clear) {
+  const k = camK, n = parseInt(v(k + "Total"), 10);
+  if (clear) down[k] = {};
+  const locs = camLocs(); Object.keys(down[k]).forEach(c => { if (down[k][c].loc) locs[c] = down[k][c].loc; }); store.set("camloc", JSON.stringify(locs));
+  $(k + "Down").value = camText(k);
+  if (n) $(k + "Up").value = n - Object.keys(down[k]).length;
+  $("camDlg").dataset.ok = "1"; $("camDlg").close();
+  [k + "Down", k + "Up"].forEach(id => { $(id).dispatchEvent(new Event("input", { bubbles: true })); $(id).dispatchEvent(new Event("change", { bubbles: true })); });
+}
+$("camDone").onclick = () => closeCams(false);
+$("camCancel").onclick = () => $("camDlg").close();
+$("camNone").onclick = () => closeCams(true);
+$("camDlg").addEventListener("close", () => { if (!$("camDlg").dataset.ok && camK) down[camK] = JSON.parse(camSnap || "{}"); });
+document.querySelectorAll("input.pick").forEach(i => {
+  i.onclick = () => openCams(i.dataset.k);
+  i.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCams(i.dataset.k); } };
+});
+// "Clear all fields" empties the boxes; forget the picks too.
+$("reset").addEventListener("click", () => setTimeout(() => ["ip", "an"].forEach(k => { if (!$(k + "Down").value) down[k] = {}; })));
+
 // ---------- Save to Google Sheet ----------
 // Paste the /exec URL here once deployed so every device uses it without setup.
 const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbxaMwodo0oHWIxH9hbDZxlMqRBsNuN38rYB44RIMCOgtogK8HAnPIZZKHxatbpkaxc0/exec";
@@ -438,10 +734,10 @@ function say(t, ok) { $("err").style.color = ok ? "var(--muted)" : ""; $("err").
 function reportData(force) {
   const cam = k => ({ total: v(k + "Total"), up: v(k + "Up"), down: v(k + "Down"), rec: v(k + "Rec"), clock: v(k + "Clock"), days: v(k + "Days") });
   return {
-    date: v("date"), shift: v("shift"), operator: opName(), position: opPos(),
+    date: v("date"), shift: v("shift"), role: operator, operator: opName(), position: opPos(),
     ip: cam("ip"), an: cam("an"),
     incidents: status === "inc" ? incidents().filter(r => r.time || r.cam || r.what || r.action).map(r => ({ ...r, time: fmtTime(r.time) })) : [],
-    notes: v("notes"), notedBy: v("notedName"), force: !!force
+    notes: v("notes"), handTo: v("handTo"), notedBy: v("notedName"), force: !!force
   };
 }
 // Reads the script's reply; a web page instead of data means a sign-in or permission page.
@@ -467,7 +763,7 @@ $("saveSheet").onclick = async () => {
       if (!confirm("A report for this date and shift is already in the sheet (" + j.duplicate + "). Save this one too?")) { say("Not saved."); return; }
       j = await postReport(true);
     }
-    say(j.ok ? "Saved to the register as " + j.id + (j.incidents ? " with " + j.incidents + " incident(s)." : ".") : "Not saved: " + j.error, j.ok);
+    say(j.ok ? "Saved to the register as " + j.id + (j.incidents ? " with " + j.incidents + " incident(s)" : "") + "." : "Not saved: " + j.error, j.ok);
   } catch (e) {
     if (e.message === "page") { say(NOT_JSON); return; }
     say(navigator.onLine === false ? "No internet connection. Try again when online." : "Sent, but no reply came back, so it may or may not have saved. Check the sheet before saving again.");
@@ -502,6 +798,7 @@ function pdfFromJpeg(jpeg, w, h) {
   add("trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + x + "\n%%EOF");
   return new Blob(parts, { type: "application/pdf" });
 }
+const PDF_RULE = "file the PDF in the official folder and delete it from this device. Never send it through Messenger or Viber.";
 let busy = false, pdfFile = null; window.pdfReadyEl = $("pdfReady");
 const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 function download(blob, name) {
@@ -513,13 +810,13 @@ $("pdfGet").onclick = async () => {
   if (!pdfFile) return;
   const { blob, name } = pdfFile, file = new File([blob], name, { type: "application/pdf" });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); say("Choose \u201cSave to Files\u201d to keep the PDF on your phone.", true); }
+    try { await navigator.share({ files: [file] }); say("Choose \u201cSave to Files\u201d. Then " + PDF_RULE, true); }
     catch (e) { if (e.name !== "AbortError") { download(blob, name); } }
   } else {
     // Older iPhones: open the PDF, then use the Share button to save it.
     const url = URL.createObjectURL(blob), w = window.open(url, "_blank");
     if (!w) location.href = url;
-    say("The PDF opened. Tap Share, then \u201cSave to Files\u201d.", true);
+    say("The PDF opened. Tap Share, then \u201cSave to Files\u201d. Then " + PDF_RULE + " If nothing opened, this screen cannot save files. Open the report in Safari instead.", true);
   }
 };
 $("print").onclick = async () => {
@@ -549,7 +846,7 @@ $("print").onclick = async () => {
       $("pdfReady").classList.remove("hidden");
     } else {
       download(blob, name);
-      msg.textContent = "Saved \u201c" + name + "\u201d. Check your Downloads.";
+      msg.textContent = "Saved \u201c" + name + "\u201d in your Downloads. Then " + PDF_RULE;
     }
   } catch (e) {
     msg.style.color = ""; msg.textContent = "Could not make the PDF (" + e.message + ").";
@@ -566,7 +863,7 @@ $("reset").onclick = () => {
 };
 
 // remembered on this PC
-const KEEP = ["headName", "coName", "gsName", "dmName", "ipTotal", "anTotal", "ipDays", "anDays", "notedName"];
+const KEEP = ["ipTotal", "anTotal", "ipDays", "anDays", "notedName"];
 KEEP.forEach(id => { const s = store.get(id); if (s !== null) $(id).value = s; $(id).addEventListener("change", () => store.set(id, $(id).value.trim())); });
 document.querySelector(".editor").addEventListener("input", render);
 document.querySelector(".editor").addEventListener("change", render);
