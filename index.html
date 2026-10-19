@@ -32,7 +32,7 @@
     .panel { padding: 12px; margin-bottom: 10px; }
     input, textarea, select { font-size: 16px; padding: 9px 10px; }
     .seg { flex-wrap: wrap; }
-    .seg button { padding: 10px 6px; min-width: 33%; }
+    .seg button { padding: 10px 6px; min-width: 50%; }
     .btn { padding: 11px 14px; font-size: 15px; }
     .printbar { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -4px 12px rgba(0,0,0,.15); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
     .printbar .btn { flex: 1; }
@@ -52,6 +52,8 @@
   .btn.ghost { background: transparent; color: var(--accent); }
   .btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
   .btn.small { padding: 4px 8px; font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .seg button + button { border-left: 1px solid var(--accent); }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
   .err { color: var(--danger); font-size: 12px; margin-top: 8px; white-space: pre-line; }
@@ -120,22 +122,32 @@
       </div>
       <datalist id="shifts">
         <option value="8:00 AM – 5:00 PM">
+        <option value="8:00 AM – 12:00 NN (WFH)">
+        <option value="1:00 PM – 5:00 PM (WFH)">
         <option value="5:00 PM – 8:00 AM">
         <option value="8:00 AM – 8:00 PM">
         <option value="8:00 PM – 8:00 AM">
         <option value="24 hours">
       </datalist>
+      <div class="chips" id="shiftChips">
+        <button class="btn small ghost" type="button" data-shift="8:00 AM – 5:00 PM">8:00 AM – 5:00 PM</button>
+        <button class="btn small ghost wfh" type="button" data-shift="8:00 AM – 12:00 NN (WFH)">Fri WFH 8:00 – 12:00 NN</button>
+        <button class="btn small ghost wfh" type="button" data-shift="1:00 PM – 5:00 PM (WFH)">Fri WFH 1:00 – 5:00 PM</button>
+      </div>
+      <p class="hint hidden" id="friHint">Friday: pick a 4-hour WFH shift for the WFH report.</p>
       <label>Operator on duty</label>
       <div class="seg">
         <button id="opHead" class="on" type="button">ICTU Head</button>
         <button id="opCo" type="button">Computer Operator II</button>
         <button id="opGs" type="button">General Service Alternate</button>
+        <button id="opDm" type="button">Dormitory Manager</button>
       </div>
       <div class="row2">
         <div><label for="headName">ICTU Head (name)</label><input id="headName" placeholder="Juan A. Dela Cruz"></div>
         <div><label for="coName">Computer Operator II (name)</label><input id="coName" placeholder="Maria B. Santos"></div>
       </div>
       <label for="gsName">General Service Alternate (name)</label><input id="gsName" placeholder="Pedro C. Reyes">
+      <label for="dmName">Dormitory Manager (name)</label><input id="dmName" placeholder="Ana D. Lopez">
       <p class="hint">Names are remembered on this device.</p>
     </div>
 
@@ -287,7 +299,7 @@ function fmtTime(t) {
   const m = /^(\d{2}):(\d{2})/.exec(t || ""); if (!m) return t || "";
   const h = +m[1]; return ((h + 11) % 12 + 1) + ":" + m[2] + (h < 12 ? " AM" : " PM");
 }
-const OPS = { head: ["headName", "ICTU Head"], co: ["coName", "Computer Operator II"], gs: ["gsName", "General Service Alternate"] };
+const OPS = { head: ["headName", "ICTU Head"], co: ["coName", "Computer Operator II"], gs: ["gsName", "General Service Alternate"], dm: ["dmName", "Dormitory Manager"] };
 function opName() { return v(OPS[operator][0]); }
 function opPos() { return OPS[operator][1]; }
 
@@ -366,6 +378,7 @@ function setOperator(o) {
   $("opHead").classList.toggle("on", o === "head");
   $("opCo").classList.toggle("on", o === "co");
   $("opGs").classList.toggle("on", o === "gs");
+  $("opDm").classList.toggle("on", o === "dm");
   store.set("operator", o);
   render();
 }
@@ -381,6 +394,15 @@ function setStatus(s) {
 $("opHead").onclick = () => setOperator("head");
 $("opCo").onclick = () => setOperator("co");
 $("opGs").onclick = () => setOperator("gs");
+$("opDm").onclick = () => setOperator("dm");
+// shift quick picks; the 4-hour WFH shifts show on Fridays
+document.querySelectorAll("#shiftChips button").forEach(b => b.onclick = () => { $("shift").value = b.dataset.shift; render(); });
+function showFriday() {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v("date")), fri = !!m && new Date(+m[1], +m[2] - 1, +m[3]).getDay() === 5;
+  document.querySelectorAll("#shiftChips .wfh").forEach(b => b.classList.toggle("hidden", !fri));
+  $("friHint").classList.toggle("hidden", !fri);
+}
+$("date").addEventListener("change", showFriday); $("date").addEventListener("input", showFriday);
 $("stNone").onclick = () => setStatus("none");
 $("stInc").onclick = () => setStatus("inc");
 $("addInc").onclick = () => { addInc(); render(); };
@@ -518,17 +540,18 @@ $("reset").onclick = () => {
   ["ipRec", "ipClock", "anRec", "anClock"].forEach(id => $(id).value = "Yes");
   KEEP.forEach(id => store.set(id, ""));
   $("incList").innerHTML = ""; setStatus("none"); setOperator("head");
-  $("date").value = todayISO(); pdfFile = null; render();
+  $("date").value = todayISO(); pdfFile = null; showFriday(); render();
   say("All fields cleared.", true); window.scrollTo(0, 0);
 };
 
 // remembered on this PC
-const KEEP = ["headName", "coName", "gsName", "ipTotal", "anTotal", "ipDays", "anDays", "notedName"];
+const KEEP = ["headName", "coName", "gsName", "dmName", "ipTotal", "anTotal", "ipDays", "anDays", "notedName"];
 KEEP.forEach(id => { const s = store.get(id); if (s !== null) $(id).value = s; $(id).addEventListener("change", () => store.set(id, $(id).value.trim())); });
 document.querySelector(".editor").addEventListener("input", render);
 document.querySelector(".editor").addEventListener("change", render);
 $("date").value = todayISO();
 setOperator(OPS[store.get("operator")] ? store.get("operator") : "head");
+showFriday();
 </script>
 </body>
 </html>
